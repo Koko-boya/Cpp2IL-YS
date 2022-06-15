@@ -102,7 +102,7 @@ namespace LibCpp2IL.Metadata
 
             LibLogger.InfoNewline($"\tUsing actual IL2CPP Metadata version {actualVersion}");
 
-            LibCpp2IlMain.MetadataVersion = actualVersion;
+            LibCpp2IlMain.MetadataVersion = 24.5f;
 
             return new Il2CppMetadata(new MemoryStream(bytes));
         }
@@ -219,7 +219,7 @@ namespace LibCpp2IL.Metadata
             }
 
             //Removed in v27 (2020.2) and also 24.5 (2019.4.21)
-            if (LibCpp2IlMain.MetadataVersion < 27f)
+            if (LibCpp2IlMain.MetadataVersion < 27f && LibCpp2IlMain.MetadataVersion != 24.5f)
             {
                 LibLogger.Verbose("\tReading usage data...");
                 start = DateTime.Now;

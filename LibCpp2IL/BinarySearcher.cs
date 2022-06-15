@@ -306,7 +306,8 @@ namespace LibCpp2IL
                     if (i % 2 == 0)
                     {
                         //Count
-                        ok = mrWords[i] < 0xA_0000;
+                        //Changing the Count Offset
+                        ok = mrWords[i] < 0x19F00000;
 
                         if (!ok && mrWords[i] < 0xF_FFFF)
                             LibLogger.VerboseNewline($"\t\t\tRejected Metadata registration at 0x{va:X}, because it has a count field 0x{mrWords[i]:X} which is above sanity limit of 0xA0000. If metadata registration detection fails, need to bump up the limit.");
