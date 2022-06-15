@@ -230,7 +230,7 @@ namespace LibCpp2IL.Metadata
             }
 
             //Removed in v27 (2020.2) and also 24.5 (2019.4.21)
-            if (LibCpp2IlMain.MetadataVersion < 27f && LibCpp2IlMain.MetadataVersion != 24.5f)
+            if (LibCpp2IlMain.MetadataVersion < 27f)
             {
                 LibLogger.Verbose("\tReading usage data...");
                 start = DateTime.Now;
@@ -287,6 +287,9 @@ namespace LibCpp2IL.Metadata
 
         private void DecipherMetadataUsage()
         {
+            if (metadataUsageLists.Length == 0)
+                return;
+
             metadataUsageDic = new();
             for (var i = 1u; i <= 6u; i++)
             {
