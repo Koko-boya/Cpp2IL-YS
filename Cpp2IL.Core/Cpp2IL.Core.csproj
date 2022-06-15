@@ -19,7 +19,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="AsmResolver" Version="4.10.0" />
+        <PackageReference Include="AsmResolver" Version="4.11.1" />
         <PackageReference Include="AsmResolver.DotNet" Version="4.10.0" />
         <PackageReference Include="AsmResolver.PE" Version="4.10.0" />
         <PackageReference Include="js6pak.Gee.External.Capstone" Version="2.1.0" />
