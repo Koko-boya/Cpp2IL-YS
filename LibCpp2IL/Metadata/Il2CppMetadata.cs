@@ -101,6 +101,8 @@ namespace LibCpp2IL.Metadata
                     actualVersion = 24.15f; //2018.4.34 made a tiny little change which just removes HashValueIndex from AssemblyNameDefinition
                 else if (unityVersion.IsGreaterEqual(2018, 3))
                     actualVersion = 24.1f; //2018.3.0 introduces v24.1
+                else if (unityVersion.IsGreaterEqual(2017, 4, 30))
+                    actualVersion = 24.5f; //detected ys pog
                 else
                     actualVersion = version; //2017.1.0 was the first v24 version
             }
@@ -108,7 +110,7 @@ namespace LibCpp2IL.Metadata
 
             LibLogger.InfoNewline($"\tUsing actual IL2CPP Metadata version {actualVersion}");
 
-            LibCpp2IlMain.MetadataVersion = 24.5f;
+            LibCpp2IlMain.MetadataVersion = actualVersion;
 
             return new Il2CppMetadata(new MemoryStream(bytes));
         }
