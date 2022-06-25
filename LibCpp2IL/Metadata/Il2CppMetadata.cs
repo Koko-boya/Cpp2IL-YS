@@ -59,13 +59,17 @@ namespace LibCpp2IL.Metadata
 
         public static Il2CppMetadata? ReadFrom(byte[] bytes, UnityVersion unityVersion)
         {
+            var isMihoyo = false;
             if (!HasMetadataHeader(bytes))
             {
                 //Magic number is wrong
-                throw new FormatException("Invalid or corrupt metadata (magic number check failed)");
+                //throw new FormatException("Invalid or corrupt metadata (magic number check failed)");
+                LibLogger.WarnNewline($"Invalid or corrupt metadata(magic number check failed)");
+                LibLogger.WarnNewline($"\tAttempting to read decrypted metadata mIhOyO-sTylE");
+                isMihoyo = true;
             }
 
-            var version = BitConverter.ToInt32(bytes, 4);
+            var version = isMihoyo ? 24 : BitConverter.ToInt32(bytes, 4);
             if (version is < 24 or > 29)
             {
                 throw new FormatException("Unsupported metadata version found! We support 24-29, got " + version);
@@ -119,12 +123,19 @@ namespace LibCpp2IL.Metadata
 
             LibCpp2IlMain.MetadataVersion = actualVersion;
 
-            return new Il2CppMetadata(new MemoryStream(bytes));
+            return new Il2CppMetadata(new MemoryStream(bytes), isMihoyo);
         }
-
-        private Il2CppMetadata(MemoryStream stream) : base(stream)
+        private Il2CppMetadata(MemoryStream stream, bool isMihoyo) : base(stream)
+        {
+            if (!isMihoyo)
         {
             metadataHeader = ReadReadable<Il2CppGlobalMetadataHeader>();
+            }
+            else
+            {
+                metadataHeader = ReadReadable<Il2CppGlobalMetadataHeaderMihoyo>();
+            }
+
             if (metadataHeader.magicNumber != 0xFAB11BAF)
             {
                 throw new Exception("ERROR: Magic number mismatch. Expecting " + 0xFAB11BAF + " but got " + metadataHeader.magicNumber);
@@ -144,7 +155,14 @@ namespace LibCpp2IL.Metadata
 
             LibLogger.Verbose("\tReading type definitions...");
             start = DateTime.Now;
+            if (isMihoyo)
+            {
+                typeDefs = ReadMetadataClassArray<Il2CppTypeDefinitionMihoyo>(metadataHeader.typeDefinitionsOffset, metadataHeader.typeDefinitionsCount);
+            }
+            else
+            {
             typeDefs = ReadMetadataClassArray<Il2CppTypeDefinition>(metadataHeader.typeDefinitionsOffset, metadataHeader.typeDefinitionsCount);
+            }
             LibLogger.VerboseNewline($"{typeDefs.Length} OK ({(DateTime.Now - start).TotalMilliseconds} ms)");
 
             LibLogger.Verbose("\tReading interface offsets...");
@@ -159,7 +177,14 @@ namespace LibCpp2IL.Metadata
 
             LibLogger.Verbose("\tReading method definitions...");
             start = DateTime.Now;
+            if (isMihoyo)
+            {
+                methodDefs = ReadMetadataClassArray<Il2CppMethodDefinitionMihoyo>(metadataHeader.methodsOffset, metadataHeader.methodsCount);
+            }
+            else
+            {
             methodDefs = ReadMetadataClassArray<Il2CppMethodDefinition>(metadataHeader.methodsOffset, metadataHeader.methodsCount);
+            }
             LibLogger.VerboseNewline($"OK ({(DateTime.Now - start).TotalMilliseconds} ms)");
 
             LibLogger.Verbose("\tReading method parameter definitions...");
@@ -169,7 +194,14 @@ namespace LibCpp2IL.Metadata
 
             LibLogger.Verbose("\tReading field definitions...");
             start = DateTime.Now;
+            if (isMihoyo)
+            {
+                fieldDefs = ReadMetadataClassArray<Il2CppFieldDefinitionMihoyo>(metadataHeader.fieldsOffset, metadataHeader.fieldsCount);
+            }
+            else
+            {
             fieldDefs = ReadMetadataClassArray<Il2CppFieldDefinition>(metadataHeader.fieldsOffset, metadataHeader.fieldsCount);
+            }
             LibLogger.VerboseNewline($"OK ({(DateTime.Now - start).TotalMilliseconds} ms)");
 
             LibLogger.Verbose("\tReading default field values...");
@@ -184,7 +216,14 @@ namespace LibCpp2IL.Metadata
 
             LibLogger.Verbose("\tReading property definitions...");
             start = DateTime.Now;
+            if (isMihoyo)
+            {
+                propertyDefs = ReadMetadataClassArray<Il2CppPropertyDefinitionMihoyo>(metadataHeader.propertiesOffset, metadataHeader.propertiesCount);
+            }
+            else
+            {
             propertyDefs = ReadMetadataClassArray<Il2CppPropertyDefinition>(metadataHeader.propertiesOffset, metadataHeader.propertiesCount);
+            }
             LibLogger.VerboseNewline($"OK ({(DateTime.Now - start).TotalMilliseconds} ms)");
 
             LibLogger.Verbose("\tReading interface definitions...");
@@ -225,7 +264,14 @@ namespace LibCpp2IL.Metadata
             //v17+ fields
             LibLogger.Verbose("\tReading string definitions...");
             start = DateTime.Now;
+            if (isMihoyo)
+            {
+                stringLiterals = ReadMetadataClassArray<Il2CppStringLiteralMihoyo>(metadataHeader.stringLiteralOffset, metadataHeader.stringLiteralCount);
+            }
+            else
+            {
             stringLiterals = ReadMetadataClassArray<Il2CppStringLiteral>(metadataHeader.stringLiteralOffset, metadataHeader.stringLiteralCount);
+            }
             LibLogger.VerboseNewline($"OK ({(DateTime.Now - start).TotalMilliseconds} ms)");
 
             if (LibCpp2IlMain.MetadataVersion < 24.2f)
@@ -440,4 +486,277 @@ namespace LibCpp2IL.Metadata
             return Encoding.UTF8.GetString(ReadByteArrayAtRawAddress(metadataHeader.stringLiteralDataOffset + stringLiteral.dataIndex, (int) stringLiteral.length));
         }
     }
+    ///NOTE: 
+    /// I wanted to make a loader plugin for this but thats not supported atm
+    ///TODO:
+    /// - Add decryption
+    /// - Test <2.7 metadata
+    /// - Move to a new file
+    public class Il2CppGlobalMetadataHeaderMihoyo : Il2CppGlobalMetadataHeader
+    {
+        public int filler00;
+        public int filler04;
+        public int filler08;
+        public int filler0C;
+        public int filler10;
+        public int filler14;
+        public int filler58;
+        public int filler5C;
+        public int filler60;
+        public int filler64;
+        public int filler68;
+        public int filler6C;
+        public int fillerF0;
+        public int fillerF4;
+        public int filler100;
+        public int filler104;
+        public int filler108;
+        public int filler10C;
+        public int filler140;
+        public int filler144;
+        public int filler148;
+        public int filler14C;
+
+        public override void Read(ClassReadingBinaryReader reader)
+        {
+            magicNumber = 0xFAB11BAF;
+            version = 24;
+            filler00 = reader.ReadInt32();
+            filler04 = reader.ReadInt32();
+            filler08 = reader.ReadInt32();
+            filler0C = reader.ReadInt32();
+            filler10 = reader.ReadInt32();
+            filler14 = reader.ReadInt32();
+            stringLiteralDataOffset = reader.ReadInt32();
+            stringLiteralDataCount = reader.ReadInt32();
+            stringLiteralOffset = reader.ReadInt32();
+            stringLiteralCount = reader.ReadInt32();
+            genericContainersOffset = reader.ReadInt32();
+            genericContainersCount = reader.ReadInt32();
+            nestedTypesOffset = reader.ReadInt32();
+            nestedTypesCount = reader.ReadInt32();
+            interfacesOffset = reader.ReadInt32();
+            interfacesCount = reader.ReadInt32();
+            vtableMethodsOffset = reader.ReadInt32();
+            vtableMethodsCount = reader.ReadInt32();
+            interfaceOffsetsOffset = reader.ReadInt32();
+            interfaceOffsetsCount = reader.ReadInt32();
+            typeDefinitionsOffset = reader.ReadInt32();
+            typeDefinitionsCount = reader.ReadInt32();
+            if (IsAtMost(24.4f))
+            {
+                rgctxEntriesOffset = reader.ReadInt32();
+                rgctxEntriesCount = reader.ReadInt32();
+            }
+            else
+            {
+                filler58 = reader.ReadInt32();
+                filler5C = reader.ReadInt32();
+            }
+            filler60 = reader.ReadInt32();
+            filler64 = reader.ReadInt32();
+            filler68 = reader.ReadInt32();
+            filler6C = reader.ReadInt32();
+            imagesOffset = reader.ReadInt32();
+            imagesCount = reader.ReadInt32();
+            assembliesOffset = reader.ReadInt32();
+            assembliesCount = reader.ReadInt32();
+            fieldsOffset = reader.ReadInt32();
+            fieldsCount = reader.ReadInt32();
+            genericParametersOffset = reader.ReadInt32();
+            genericParametersCount = reader.ReadInt32();
+            fieldAndParameterDefaultValueDataOffset = reader.ReadInt32();
+            fieldAndParameterDefaultValueDataCount = reader.ReadInt32();
+            fieldMarshaledSizesOffset = reader.ReadInt32();
+            fieldMarshaledSizesCount = reader.ReadInt32();
+            referencedAssembliesOffset = reader.ReadInt32();
+            referencedAssembliesCount = reader.ReadInt32();
+            attributesInfoOffset = reader.ReadInt32();
+            attributesInfoCount = reader.ReadInt32();
+            attributeTypesOffset = reader.ReadInt32();
+            attributeTypesCount = reader.ReadInt32();
+            unresolvedVirtualCallParameterTypesOffset = reader.ReadInt32();
+            unresolvedVirtualCallParameterTypesCount = reader.ReadInt32();
+            unresolvedVirtualCallParameterRangesOffset = reader.ReadInt32();
+            unresolvedVirtualCallParameterRangesCount = reader.ReadInt32();
+            windowsRuntimeTypeNamesOffset = reader.ReadInt32();
+            windowsRuntimeTypeNamesSize = reader.ReadInt32();
+            exportedTypeDefinitionsOffset = reader.ReadInt32();
+            exportedTypeDefinitionsCount = reader.ReadInt32();
+            stringOffset = reader.ReadInt32();
+            stringCount = reader.ReadInt32();
+            parametersOffset = reader.ReadInt32();
+            parametersCount = reader.ReadInt32();
+            genericParameterConstraintsOffset = reader.ReadInt32();
+            genericParameterConstraintsCount = reader.ReadInt32();
+            fillerF0 = reader.ReadInt32();
+            fillerF4 = reader.ReadInt32();
+            metadataUsagePairsOffset = reader.ReadInt32();
+            metadataUsagePairsCount = reader.ReadInt32();
+            filler100 = reader.ReadInt32();
+            filler104 = reader.ReadInt32();
+            filler108 = reader.ReadInt32();
+            filler10C = reader.ReadInt32();
+            fieldRefsOffset = reader.ReadInt32();
+            fieldRefsCount = reader.ReadInt32();
+            eventsOffset = reader.ReadInt32();
+            eventsCount = reader.ReadInt32();
+            propertiesOffset = reader.ReadInt32();
+            propertiesCount = reader.ReadInt32();
+            methodsOffset = reader.ReadInt32();
+            methodsCount = reader.ReadInt32();
+            parameterDefaultValuesOffset = reader.ReadInt32();
+            parameterDefaultValuesCount = reader.ReadInt32();
+            fieldDefaultValuesOffset = reader.ReadInt32();
+            fieldDefaultValuesCount = reader.ReadInt32();
+            filler140 = reader.ReadInt32();
+            filler144 = reader.ReadInt32();
+            filler148 = reader.ReadInt32();
+            filler14C = reader.ReadInt32();
+            metadataUsageListsOffset = reader.ReadInt32();
+            metadataUsageListsCount = reader.ReadInt32();
+        }
+    }
+    public class Il2CppTypeDefinitionMihoyo : Il2CppTypeDefinition
+    {
+        public override void Read(ClassReadingBinaryReader reader)
+        {
+            NameIndex = reader.ReadInt32();
+            NamespaceIndex = reader.ReadInt32();
+
+            if (IsAtMost(24f))
+                CustomAttributeIndex = reader.ReadInt32();
+
+            ByvalTypeIndex = reader.ReadInt32();
+            ByrefTypeIndex = reader.ReadInt32();
+
+            DeclaringTypeIndex = reader.ReadInt32();
+            ParentIndex = reader.ReadInt32();
+            ElementTypeIndex = reader.ReadInt32();
+
+            if (IsAtMost(24.15f))
+            {
+                RgctxStartIndex = reader.ReadInt32();
+                RgctxCount = reader.ReadInt32();
+            }
+
+            GenericContainerIndex = reader.ReadInt32();
+            Flags = reader.ReadUInt32();
+
+            FirstFieldIdx = reader.ReadInt32();
+            FirstPropertyId = reader.ReadInt32();
+            FirstMethodIdx = reader.ReadInt32();
+            FirstEventId = reader.ReadInt32();
+            NestedTypesStart = reader.ReadInt32();
+            InterfacesStart = reader.ReadInt32();
+            InterfaceOffsetsStart = reader.ReadInt32();
+            VtableStart = reader.ReadInt32();
+
+            EventCount = reader.ReadUInt16();
+            MethodCount = reader.ReadUInt16();
+            PropertyCount = reader.ReadUInt16();
+            FieldCount = reader.ReadUInt16();
+            VtableCount = reader.ReadUInt16();
+            InterfacesCount = reader.ReadUInt16();
+            InterfaceOffsetsCount = reader.ReadUInt16();
+            NestedTypeCount = reader.ReadUInt16();
+
+            Bitfield = reader.ReadUInt32();
+            Token = reader.ReadUInt32();
+        }
+    };
+    public class Il2CppStringLiteralMihoyo : Il2CppStringLiteral
+    {
+        public override void Read(ClassReadingBinaryReader reader)
+        {
+            dataIndex = reader.ReadInt32();
+            length = reader.ReadUInt32();
+        }
+    }
+    public class Il2CppPropertyDefinitionMihoyo : Il2CppPropertyDefinition
+    {
+        public int filler08;
+        public int filler14;
+        public override void Read(ClassReadingBinaryReader reader)
+        {
+            if (IsAtMost(24.4f))
+                customAttributeIndex = reader.ReadInt32();
+
+            nameIndex = reader.ReadInt32();
+            //Cache name now
+            var pos = reader.Position;
+            Name = ((Il2CppMetadata)reader).ReadStringFromIndexNoReadLock(nameIndex);
+            reader.Position = pos;
+
+            filler08 = reader.ReadInt32();
+            token = reader.ReadUInt32();
+            attrs = reader.ReadUInt32();
+            filler14 = reader.ReadInt32();
+            set = reader.ReadInt32();
+            get = reader.ReadInt32();
+
+
+        }
+    };
+    public class Il2CppMethodDefinitionMihoyo : Il2CppMethodDefinition
+    {
+        public int filler08;
+        public int filler20;
+        public override void Read(ClassReadingBinaryReader reader)
+        {
+            returnTypeIdx = reader.ReadInt32();
+            declaringTypeIdx = reader.ReadInt32();
+            filler08 = reader.ReadInt32();
+            nameIndex = reader.ReadInt32();
+            //Cache name now
+            var pos = reader.Position;
+            Name = ((Il2CppMetadata)reader).ReadStringFromIndexNoReadLock(nameIndex);
+            reader.Position = pos;
+            parameterStart = reader.ReadInt32();
+
+
+            if (IsAtMost(24.4f))
+            {
+                customAttributeIndex = reader.ReadInt32();
+                _ = reader.ReadInt32(); //reversePInvokeWrapperIndex
+            }
+
+            genericContainerIndex = reader.ReadInt32();
+            filler20 = reader.ReadInt32();
+
+            if (IsAtMost(24.4f))
+            {
+                methodIndex = reader.ReadInt32();
+                invokerIndex = reader.ReadInt32();
+                delegateWrapperIndex = reader.ReadInt32();
+                rgctxStartIndex = reader.ReadInt32();
+                rgctxCount = reader.ReadInt32();
+            }
+
+
+            parameterCount = reader.ReadUInt16();
+            flags = reader.ReadUInt16();
+            slot = reader.ReadUInt16();
+            iflags = reader.ReadUInt16();
+            token = reader.ReadUInt32();
+        }
+    };
+    public class Il2CppFieldDefinitionMihoyo : Il2CppFieldDefinition
+    {
+        public override void Read(ClassReadingBinaryReader reader)
+        {
+            if (IsAtMost(24f))
+                customAttributeIndex = reader.ReadInt32();
+
+            typeIndex = reader.ReadInt32();
+            nameIndex = reader.ReadInt32();
+
+            //Cache name now
+            var pos = reader.Position;
+            Name = ((Il2CppMetadata)reader).ReadStringFromIndexNoReadLock(nameIndex);
+            reader.Position = pos;
+
+            token = reader.ReadUInt32();
+        }
+    };
 }

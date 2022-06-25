@@ -11,7 +11,7 @@ namespace LibCpp2IL.Metadata
         [Version(Max = 24)] public int customAttributeIndex;
         public uint token;
 
-        public string? Name { get; private set; }
+        public string? Name { get; set; }
 
         public Il2CppType? RawFieldType => LibCpp2IlMain.Binary?.GetType(typeIndex);
         public Il2CppTypeReflectionData? FieldType => RawFieldType == null ? null : LibCpp2ILUtils.GetTypeReflectionData(RawFieldType);

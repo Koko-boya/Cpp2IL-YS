@@ -33,7 +33,7 @@ namespace LibCpp2IL.Metadata
 
         public int MethodIndex => LibCpp2IlReflection.GetMethodIndexFromMethod(this);
         
-        public string? Name { get;private set; }
+        public string? Name { get; set; }
 
         public string? GlobalKey => DeclaringType == null ? null : DeclaringType.Name + "." + Name + "()";
 

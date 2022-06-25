@@ -33,7 +33,7 @@ namespace LibCpp2IL.Metadata
             internal set => _type = value;
         }
 
-        public string? Name { get; private set; }
+        public string? Name { get; set; }
 
         public Il2CppMethodDefinition? Getter => LibCpp2IlMain.TheMetadata == null || get < 0 || DeclaringType == null ? null : LibCpp2IlMain.TheMetadata.methodDefs[DeclaringType.FirstMethodIdx + get];
 
