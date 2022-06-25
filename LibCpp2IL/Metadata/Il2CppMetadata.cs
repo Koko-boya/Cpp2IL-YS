@@ -123,6 +123,11 @@ namespace LibCpp2IL.Metadata
 
             LibCpp2IlMain.MetadataVersion = actualVersion;
 
+            if (isMihoyo)//Assuming it is Encrypted
+            {
+                bytes = Decrypter.decrypt_global_metadata(bytes, bytes.Length);
+            }
+
             return new Il2CppMetadata(new MemoryStream(bytes), isMihoyo);
         }
         private Il2CppMetadata(MemoryStream stream, bool isMihoyo) : base(stream)
@@ -489,9 +494,9 @@ namespace LibCpp2IL.Metadata
     ///NOTE: 
     /// I wanted to make a loader plugin for this but thats not supported atm
     ///TODO:
-    /// - Add decryption
     /// - Test <2.7 metadata
     /// - Move to a new file
+
     public class Il2CppGlobalMetadataHeaderMihoyo : Il2CppGlobalMetadataHeader
     {
         public int filler00;
